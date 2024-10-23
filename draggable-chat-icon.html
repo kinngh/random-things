@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #floating-button {
+        position: fixed;
+        width: 80px;
+        height: 80px;
+        background-color: #2563eb;
+        border-radius: 50%;
+        cursor: grab;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        right: 20px;
+        bottom: 20px;
+        touch-action: none;
+      }
+
+      #floating-button:active {
+        cursor: grabbing;
+      }
+
+      #floating-button svg {
+        width: 40px;
+        height: 40px;
+        fill: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="floating-button">
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"
+        />
+      </svg>
+    </div>
+
+    <script>
+      const button = document.getElementById("floating-button");
+      let isDragging = false;
+      let startX, startY, initialX, initialY;
+      let dragStartTime;
+
+      function initDrag(e) {
+        const event = e.type === "mousedown" ? e : e.touches[0];
+        isDragging = true;
+        dragStartTime = Date.now();
+
+        const style = window.getComputedStyle(button);
+        const transform = style.getPropertyValue("right");
+        const bottom = style.getPropertyValue("bottom");
+
+        initialX = parseInt(transform) || 20;
+        initialY = parseInt(bottom) || 20;
+
+        startX = event.clientX;
+        startY = event.clientY;
+
+        button.style.transition = "none";
+      }
+
+      function doDrag(e) {
+        if (!isDragging) return;
+
+        e.preventDefault();
+        const event = e.type === "mousemove" ? e : e.touches[0];
+
+        const deltaX = startX - event.clientX;
+        const deltaY = startY - event.clientY;
+
+        const newRight = initialX + deltaX;
+        const newBottom = initialY + deltaY;
+
+        const maxRight = window.innerWidth - button.offsetWidth;
+        const maxBottom = window.innerHeight - button.offsetHeight;
+
+        button.style.right = `${Math.min(Math.max(20, newRight), maxRight)}px`;
+        button.style.bottom = `${Math.min(
+          Math.max(20, newBottom),
+          maxBottom
+        )}px`;
+      }
+
+      function stopDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+
+        const dragEndTime = Date.now();
+        const dragDuration = dragEndTime - dragStartTime;
+
+        button.style.transition = "all 0.3s ease";
+
+        const rect = button.getBoundingClientRect();
+        const buttonWidth = rect.width;
+
+        if (rect.left < window.innerWidth / 2) {
+          button.style.right = `${window.innerWidth - buttonWidth - 20}px`;
+        } else {
+          button.style.right = "20px";
+        }
+
+        // Only trigger click if the drag duration was very short (like a tap)
+        if (
+          dragDuration < 200 &&
+          Math.abs(startX - (e.clientX || e.changedTouches[0].clientX)) < 5
+        ) {
+          alert("clicked");
+        }
+      }
+
+      // Mouse events
+      button.addEventListener("mousedown", initDrag);
+      document.addEventListener("mousemove", doDrag);
+      document.addEventListener("mouseup", stopDrag);
+
+      // Touch events
+      button.addEventListener("touchstart", initDrag);
+      document.addEventListener("touchmove", doDrag);
+      document.addEventListener("touchend", stopDrag);
+
+      // Handle window resize
+      window.addEventListener("resize", () => {
+        const rect = button.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+          button.style.right = "20px";
+        }
+        if (rect.bottom > window.innerHeight) {
+          button.style.bottom = "20px";
+        }
+      });
+    </script>
+  </body>
+</html>
